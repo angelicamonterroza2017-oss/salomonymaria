@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10251d">
+<title>GeoTiempo — SIG en la agricultura</title>
+<style>
+:root{
+  --ink:#f5f7ed;--muted:#c2d0c4;--lime:#d5ff64;--mint:#78e0b0;
+  --panel:rgba(8,25,20,.78);--line:rgba(255,255,255,.16);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-snap-type:y mandatory;background:#081711}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:#081711}
+button,input{font:inherit}
+.topbar{position:fixed;z-index:20;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:linear-gradient(180deg,rgba(4,14,10,.88),transparent);pointer-events:none}
+.brand,.top-actions{pointer-events:auto}
+.brand{font-size:.82rem;letter-spacing:.16em;text-transform:uppercase;font-weight:900}
+.brand span{color:var(--lime)}
+.top-actions{display:flex;gap:8px}
+.pill{border:1px solid var(--line);border-radius:999px;background:rgba(10,30,22,.65);color:white;padding:8px 12px;cursor:pointer;backdrop-filter:blur(12px)}
+.progress{position:fixed;z-index:30;left:0;top:0;width:100%;height:3px;background:#ffffff18}
+.progress i{display:block;height:100%;width:0;background:var(--lime);transition:width .15s}
+.story{height:100svh;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior-y:contain}
+.scene{position:relative;min-height:100svh;scroll-snap-align:start;overflow:hidden;display:flex;align-items:flex-end;padding:76px 18px 38px;isolation:isolate}
+.scene:before{content:"";position:absolute;inset:0;z-index:-2;background:var(--bg)}
+.scene:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,rgba(3,13,9,.97) 0%,rgba(3,13,9,.76) 39%,rgba(3,13,9,.08) 100%)}
+.scene-inner{width:min(100%,760px);margin:0 auto;position:relative}
+.eyebrow{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--lime);font-weight:850;margin-bottom:12px}
+h1,h2,p{margin-top:0}
+h1{font-size:clamp(2.5rem,10vw,5.6rem);line-height:.92;letter-spacing:-.065em;margin-bottom:18px;max-width:680px}
+h2{font-size:clamp(2rem,7vw,3.5rem);line-height:.98;letter-spacing:-.045em;margin-bottom:14px}
+p{color:var(--muted);font-size:1rem;line-height:1.55;max-width:610px}
+strong{color:#fff}
+.highlight{color:var(--lime)}
+.tagrow{display:flex;gap:7px;flex-wrap:wrap;margin:16px 0}
+.tag{font-size:.75rem;border:1px solid var(--line);border-radius:999px;padding:7px 10px;background:#ffffff0c;color:#eaf5e8}
+.cta{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;background:var(--lime);color:#132316;font-weight:900;padding:12px 17px;cursor:pointer;margin-top:8px}
+.hint{font-size:.75rem;color:#dce7d7;opacity:.8;margin-top:16px}
+.art{position:absolute;top:12%;left:50%;transform:translateX(-50%);width:min(92vw,650px);height:48%;min-height:245px;z-index:-1;opacity:.98}
+.art svg{width:100%;height:100%;overflow:visible}
+.panel{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px);border-radius:20px;padding:15px;margin:15px 0}
+.panel h3{font-size:.95rem;margin:0 0 7px}
+.panel p{font-size:.88rem;margin:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{padding:12px;border-radius:14px;background:#ffffff0b;border:1px solid #ffffff14}
+.stat b{display:block;font-size:1.35rem;color:var(--lime)}
+.stat small{color:var(--muted);font-size:.76rem}
+.bubble{position:absolute;top:19%;left:7%;max-width:210px;padding:12px 14px;background:#f8ffe8;color:#15241a;border-radius:17px 17px 17px 4px;font-weight:800;font-size:.9rem;box-shadow:0 12px 30px #0004;transform:rotate(-3deg)}
+.bubble.right{left:auto;right:6%;top:34%;border-radius:17px 17px 4px 17px;transform:rotate(2deg);background:#d5ff64}
+.mapframe{border-radius:18px;overflow:hidden;border:1px solid #c6e9bc44;background:#102a21;box-shadow:0 15px 40px #0005}
+.maphead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#132d23;font-size:.73rem;color:#d5e6d5}
+.mapframe svg{display:block;width:100%;height:auto}
+.legend{display:flex;gap:12px;flex-wrap:wrap;padding:10px 12px;font-size:.7rem;color:#c6d6c8}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.control{width:100%;accent-color:var(--lime);cursor:pointer}
+.yearline{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin:10px 0}
+.yearbig{font-size:2.6rem;font-weight:950;letter-spacing:-.06em;color:var(--lime)}
+.timecopy{font-size:.9rem;color:#e3eee2}
+.choice{display:grid;gap:8px;margin-top:13px}
+.choice button{border:1px solid var(--line);border-radius:13px;padding:12px;background:#ffffff0a;color:white;text-align:left;cursor:pointer}
+.choice button:hover,.choice button:focus{border-color:var(--lime);outline:none}
+.feedback{font-size:.85rem;min-height:24px;color:var(--lime);margin-top:10px}
+.chip{display:inline-block;padding:5px 8px;border-radius:7px;background:#d5ff6417;color:var(--lime);font-size:.72rem;font-weight:800}
+.navdots{position:fixed;z-index:15;right:11px;top:50%;transform:translateY(-50%);display:grid;gap:9px}
+.navdots button{width:8px;height:8px;padding:0;border:0;border-radius:50%;background:#ffffff55;cursor:pointer}
+.navdots button.active{height:24px;border-radius:8px;background:var(--lime)}
+.footerline{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:20px;color:#c3d3c4;font-size:.75rem}
+@media(min-width:760px){
+ .scene{padding:90px 7vw 50px}
+ .scene-inner{margin-left:7%;max-width:700px}
+ .art{left:auto;right:4%;transform:none;width:53vw;height:65%;top:15%;opacity:.95}
+ .scene:after{background:linear-gradient(90deg,rgba(3,13,9,.95) 0%,rgba(3,13,9,.75) 40%,rgba(3,13,9,.08) 100%)}
+ .bubble{left:auto;right:27%;top:18%}
+ .bubble.right{right:5%;top:43%}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="progress"><i id="progress"></i></div>
+<header class="topbar">
+  <div class="brand">◉ GEO<span>TIEMPO</span></div>
+  <div class="top-actions"><button class="pill" id="soundBtn" aria-label="Activar o desactivar sonido">♫ Sonido: off</button><button class="pill" id="restart">↺ Reiniciar</button></div>
+</header>
+<nav class="navdots" aria-label="Navegación de escenas" id="navdots"></nav>
+<main class="story" id="story">
+<section class="scene" id="s1" style="--bg:radial-gradient(ellipse at 75% 25%,#35684b 0%,#173c2b 32%,#091b13 72%)">
+ <div class="art">
+  <svg viewBox="0 0 600 430" aria-label="Ilustración de un cultivo visto desde arriba">
+   <defs><linearGradient id="field" x2="1" y2="1"><stop stop-color="#a2d56a"/><stop offset="1" stop-color="#2b8052"/></linearGradient></defs>
+   <path d="M110 35 L535 85 L470 390 L45 330Z" fill="url(#field)" stroke="#c9ef8b" stroke-width="3"/>
+   <g fill="none" stroke="#17482e" stroke-width="8" opacity=".8">
+    <path d="M95 85L495 130M83 125L485 172M72 166L477 215M62 207L468 258M52 249L459 301M44 290L450 344"/>
+   </g>
+   <g fill="none" stroke="#e5ffb0" stroke-width="2" opacity=".65">
+    <path d="M112 45L49 330M180 54L116 338M248 62L184 347M316 70L252 355M384 78L320 364M452 85L388 372"/>
+   </g>
+   <path d="M285 62L267 345" stroke="#f5fff0" stroke-width="3" stroke-dasharray="8 8"/>
+   <circle cx="275" cy="195" r="32" fill="#d5ff64" opacity=".2"/><circle cx="275" cy="195" r="8" fill="#d5ff64"/>
+   <path d="M275 195L375 126L420 150" stroke="#d5ff64" stroke-width="3" fill="none"/>
+   <g fill="#f6ffe7" font-size="14" font-weight="800"><text x="382" y="118">PARCELA 04</text><text x="305" y="225">GPS</text></g>
+   <g transform="translate(470 35)"><circle r="25" fill="#0c281b" stroke="#d5ff64"/><path d="M0 -17L7 7L0 2L-7 7Z" fill="#d5ff64"/><text x="-4" y="39" fill="white" font-size="12">N</text></g>
+  </svg>
+ </div>
+ <div class="bubble">“¿Y si el mapa pudiera contar lo que pasó… y anticipar lo que viene?”</div>
+ <div class="scene-inner">
+  <div class="eyebrow">Una historieta vertical · Episodio 01</div>
+  <h1>La tierra tiene <span class="highlight">memoria.</span></h1>
+  <p>Una aventura de SIG en la agricultura donde los mapas no solo muestran lugares: revelan patrones, conectan datos y abren puertas al tiempo.</p>
+  <div class="tagrow"><span class="tag">🌱 Agricultura de precisión</span><span class="tag">🗺️ QGIS</span><span class="tag">⏳ Viajes temporales</span></div>
+  <button class="cta" onclick="go(1)">Entrar en la historia <span>↓</span></button>
+  <div class="hint">Desliza hacia arriba, como en TikTok, para avanzar.</div>
+ </div>
+</section>
+<section class="scene" id="s2" style="--bg:radial-gradient(ellipse at 70% 20%,#326e54,#122f23 48%,#07150f)">
+ <div class="art"><svg viewBox="0 0 600 430">
+  <g transform="translate(300 210)">
+   <circle r="145" fill="#112d21" stroke="#7fc99b" stroke-width="2"/><circle r="112" fill="none" stroke="#7fc99b" stroke-dasharray="4 8"/><circle r="75" fill="none" stroke="#7fc99b" stroke-dasharray="4 8"/>
+   <path d="M-145 0H145M0-145V145" stroke="#7fc99b" opacity=".6"/>
+   <path d="M-110 -60L-40 -100L20 -55L95 -85L110 -15L60 30L90 85L0 105L-45 55L-110 70Z" fill="#76c96e" opacity=".65" stroke="#d5ff64" stroke-width="3"/>
+   <g fill="#e7ffb9"><circle cx="-65" cy="-30" r="5"/><circle cx="20" cy="-55" r="5"/><circle cx="63" cy="28" r="5"/><circle cx="-45" cy="55" r="5"/></g>
+   <path d="M-65 -30L20 -55L63 28L-45 55Z" stroke="#e9ffd2" stroke-width="2" fill="none"/>
+   <g fill="#fff" font-size="12"><text x="-155" y="-160">CAPAS + DATOS</text><text x="80" y="165">SIG</text></g>
+  </g>
+ </svg></div>
+ <div class="scene-inner">
+  <div class="eyebrow">Escena 02 · El descubrimiento</div>
+  <h2>Conoce a <span class="highlight">Lina</span>, agrónoma exploradora.</h2>
+  <p>Su cultivo de maíz tiene zonas que crecen bien y otras que se estresan. Lina abre <strong>QGIS</strong> y reúne capas de suelo, elevación, lluvia, rendimiento y límites de parcelas.</p>
+  <div class="panel"><h3>🧩 ¿Qué hace un SIG?</h3><p>Integra datos con ubicación para entender <strong>dónde</strong> ocurre algo, cómo se relaciona con otras variables y qué decisiones conviene tomar.</p></div>
+  <div class="tagrow"><span class="chip">Vector: parcelas</span><span class="chip">Ráster: humedad</span><span class="chip">Tabla: rendimiento</span></div>
+  <button class="cta" onclick="go(2)">Abrir el mapa ↓</button>
+ </div>
+</section>
+<section class="scene" id="s3" style="--bg:radial-gradient(ellipse at 72% 25%,#245d48,#102d21 48%,#07150f)">
+ <div class="art" style="top:10%;height:46%">
+  <div class="mapframe">
+   <div class="maphead"><span>QGIS · Vista del proyecto</span><span>● Proyecto guardado</span></div>
+   <svg viewBox="0 0 560 330" role="img" aria-label="Mapa agrícola estilizado con parcelas y zonas de humedad">
+    <rect width="560" height="330" fill="#1b4435"/>
+    <g stroke="#a3c8a0" stroke-width="2" fill="none"><path d="M0 60L560 110M0 140L560 195M0 220L560 270M80 0L130 330M220 0L270 330M365 0L405 330M475 0L510 330"/></g>
+    <path d="M35 35L180 20L210 120L95 150Z" fill="#a5d56a" stroke="#e7ffbb" stroke-width="2"/>
+    <path d="M210 120L180 20L345 45L330 145Z" fill="#d4e86a" stroke="#e7ffbb" stroke-width="2"/>
+    <path d="M330 145L345 45L505 75L490 180Z" fill="#e99d54" stroke="#ffe0a5" stroke-width="2"/>
+    <path d="M95 150L210 120L250 235L105 270Z" fill="#4a9c76" stroke="#e7ffbb" stroke-width="2"/>
+    <path d="M210 120L330 145L365 260L250 235Z" fill="#75c9a0" stroke="#e7ffbb" stroke-width="2"/>
+    <path d="M330 145L490 180L520 285L365 260Z" fill="#de754d" stroke="#ffe0a5" stroke-width="2"/>
+    <g fill="#10251d" font-size="13" font-weight="900"><text x="98" y="86">A-01</text><text x="246" y="82">A-02</text><text x="393" y="116">A-03</text><text x="146" y="213">B-01</text><text x="277" y="191">B-02</text><text x="405" y="230">B-03</text></g>
+    <g transform="translate(510 25)"><circle r="17" fill="#10251d"/><path d="M0 -12L5 5L0 1L-5 5Z" fill="white"/></g>
+    <path d="M25 300H95" stroke="white" stroke-width="4"/><text x="25" y="290" fill="white" font-size="11">100 m</text>
+   </svg>
+   <div class="legend"><span><i class="dot" style="background:#a5d56a"></i>Buen vigor</span><span><i class="dot" style="background:#75c9a0"></i>Humedad media</span><span><i class="dot" style="background:#de754d"></i>Zona de alerta</span></div>
+  </div>
+ </div>
+ <div class="scene-inner">
+  <div class="eyebrow">Escena 03 · Leer el territorio</div>
+  <h2>El mapa no es el territorio. Es una <span class="highlight">pista.</span></h2>
+  <p>En QGIS, Lina combina capas y usa simbología graduada para detectar zonas distintas. El naranja no significa automáticamente “enfermedad”: es una señal que debe contrastar con observaciones de campo.</p>
+  <div class="two">
+   <div class="stat"><b>01</b><small>Validar con muestreo de campo</small></div>
+   <div class="stat"><b>02</b><small>Comparar suelo, agua y cultivo</small></div>
+  </div>
+  <button class="cta" onclick="go(3)">Activar el portal del tiempo ↓</button>
+ </div>
+</section>
+<section class="scene" id="s4" style="--bg:radial-gradient(ellipse at 68% 25%,#5b3d77,#282449 42%,#0b1021)">
+ <div class="art"><svg viewBox="0 0 600 430">
+  <defs><linearGradient id="portal" x2="0" y2="1"><stop stop-color="#c7ff77"/><stop offset=".5" stop-color="#58d7c4"/><stop offset="1" stop-color="#7766ef"/></linearGradient></defs>
+  <ellipse cx="310" cy="215" rx="150" ry="185" fill="#8d7dff" opacity=".12"/><ellipse cx="310" cy="215" rx="112" ry="158" fill="none" stroke="#8c8cff" stroke-width="3" opacity=".7"/><ellipse cx="310" cy="215" rx="85" ry="130" fill="none" stroke="#d5ff64" stroke-width="3"/><ellipse cx="310" cy="215" rx="56" ry="100" fill="url(#portal)" opacity=".4"/>
+  <path d="M310 88C270 130 345 150 300 193S350 250 310 340" fill="none" stroke="#efffd0" stroke-width="5"/>
+  <g fill="#fff"><circle cx="125" cy="110" r="3"/><circle cx="450" cy="95" r="4"/><circle cx="475" cy="270" r="3"/><circle cx="155" cy="315" r="4"/><circle cx="390" cy="360" r="2"/></g>
+  <g font-size="16" font-weight="900" fill="#f5f7ed"><text x="95" y="70">AYER</text><text x="410" y="380">MAÑANA</text></g>
+ </svg></div>
+ <div class="bubble">“¡Los datos también guardan huellas del pasado!”</div>
+ <div class="scene-inner">
+  <div class="eyebrow">Escena 04 · Salto temporal</div>
+  <h2>QGIS abre una ventana a <span class="highlight">otros años.</span></h2>
+  <p>Lina carga imágenes satelitales históricas, mapas de suelos y registros de cosecha. Al ordenar las capas por fecha, descubre cómo cambió la parcela.</p>
+  <div class="panel"><h3>⏳ Un viaje hecho de datos</h3><p>No es magia: son observaciones de distintas fechas, alineadas en el espacio para comparar cambios a través del tiempo.</p></div>
+  <div class="tagrow"><span class="tag">Imágenes satelitales</span><span class="tag">Series temporales</span><span class="tag">Georreferenciación</span></div>
+  <button class="cta" onclick="go(4)">Elegir una fecha ↓</button>
+ </div>
+</section>
+<section class="scene" id="s5" style="--bg:radial-gradient(ellipse at 72% 20%,#34664b,#143524 48%,#081810)">
+ <div class="art" style="top:10%;height:43%">
+  <div class="mapframe">
+   <div class="maphead"><span>SIMULADOR TEMPORAL · Parcela A-02</span><span id="mapYear">2026</span></div>
+   <svg viewBox="0 0 560 285" id="temporalMap" aria-label="Mapa que cambia con el año">
+    <rect width="560" height="285" fill="#1b4435"/>
+    <g stroke="#d9f1c9" stroke-width="3">
+     <path id="p1" d="M25 25L180 20L210 120L95 150Z" fill="#a5d56a"/>
+     <path id="p2" d="M210 120L180 20L345 45L330 145Z" fill="#d4e86a"/>
+     <path id="p3" d="M330 145L345 45L505 75L490 180Z" fill="#e99d54"/>
+     <path id="p4" d="M95 150L210 120L250 235L105 260Z" fill="#4a9c76"/>
+     <path id="p5" d="M210 120L330 145L365 260L250 235Z" fill="#75c9a0"/>
+     <path id="p6" d="M330 145L490 180L520 260L365 260Z" fill="#de754d"/>
+    </g>
+    <g fill="#10251d" font-size="13" font-weight="900"><text x="88" y="85">A-01</text><text x="240" y="80">A-02</text><text x="390" y="120">A-03</text><text x="270" y="195">B-02</text></g>
+   </svg>
+   <div class="legend"><span><i class="dot" style="background:#a5d56a"></i>Vigor alto</span><span><i class="dot" style="background:#e99d54"></i>Estrés potencial</span><span><i class="dot" style="background:#4a9c76"></i>Vigor medio</span></div>
+  </div>
+ </div>
+ <div class="scene-inner">
+  <div class="eyebrow">Escena 05 · Tu turno</div>
+  <h2>Desliza la <span class="highlight">línea del tiempo.</span></h2>
+  <p>Explora esta simulación conceptual. Cambiar el año transforma el patrón del mapa y la historia que cuenta. Los colores son ilustrativos, no mediciones reales.</p>
+  <div class="panel">
+   <div class="yearline"><span>Pasado</span><span class="yearbig" id="yearLabel">2026</span><span>Futuro</span></div>
+   <input class="control" id="yearSlider" type="range" min="2000" max="2035" value="2026" step="1" aria-label="Seleccionar año"/>
+   <div class="yearline"><span>2000</span><span>2010</span><span>2020</span><span>2035</span></div>
+   <p class="timecopy" id="timeCopy" aria-live="polite">2026 · La parcela muestra variabilidad: Lina debe verificar humedad, compactación y nutrición.</p>
+  </div>
+  <button class="cta" onclick="go(5)">Resolver el misterio ↓</button>
+ </div>
+</section>
+<section class="scene" id="s6" style="--bg:radial-gradient(ellipse at 70% 20%,#8c633c,#3b3b28 45%,#111c13)">
+ <div class="art"><svg viewBox="0 0 600 430">
+  <path d="M70 300L530 300L470 390L130 390Z" fill="#66482b"/><path d="M95 275L505 275L530 300L70 300Z" fill="#a4ce5c"/>
+  <g stroke="#dcf5a0" stroke-width="4" fill="none"><path d="M130 280Q140 210 125 160M210 280Q200 210 220 150M290 280Q300 205 280 135M370 280Q355 205 380 155M450 280Q460 205 445 160"/></g>
+  <g fill="#6dc96c"><ellipse cx="120" cy="200" rx="35" ry="13" transform="rotate(-30 120 200)"/><ellipse cx="155" cy="225" rx="32" ry="12" transform="rotate(28 155 225)"/><ellipse cx="205" cy="190" rx="36" ry="13" transform="rotate(-30 205 190)"/><ellipse cx="240" cy="220" rx="32" ry="12" transform="rotate(28 240 220)"/><ellipse cx="280" cy="175" rx="35" ry="13" transform="rotate(-30 280 175)"/><ellipse cx="315" cy="215" rx="32" ry="12" transform="rotate(28 315 215)"/><ellipse cx="380" cy="195" rx="35" ry="13" transform="rotate(-30 380 195)"/><ellipse cx="415" cy="225" rx="32" ry="12" transform="rotate(28 415 225)"/><ellipse cx="445" cy="195" rx="35" ry="13" transform="rotate(-30 445 195)"/></g>
+  <g transform="translate(300 75)"><circle r="38" fill="#f0b57c"/><path d="M-35 -5Q-35 -50 0 -44Q35 -40 37 -5L24 -16L-20 -15Z" fill="#203b2c"/><path d="M-20 35L-55 120L55 120L20 35Z" fill="#d5ff64"/><path d="M-55 120L-75 170M55 120L75 170" stroke="#f0b57c" stroke-width="15" stroke-linecap="round"/></g>
+ </svg></div>
+ <div class="scene-inner">
+  <div class="eyebrow">Escena 06 · Decidir con evidencia</div>
+  <h2>El mapa propone. El campo <span class="highlight">confirma.</span></h2>
+  <p>Lina visita las zonas señaladas, toma muestras y registra observaciones con coordenadas. El análisis espacial orienta dónde revisar primero; no sustituye el criterio agronómico.</p>
+  <div class="panel"><h3>¿Cuál sería el siguiente paso?</h3><p>Elige la acción más responsable para investigar una zona con vigor bajo.</p>
+   <div class="choice">
+    <button onclick="answer(0)">A · Aplicar fertilizante a toda la parcela de inmediato.</button>
+    <button onclick="answer(1)">B · Revisar datos, muestrear suelo y plantas, y validar en campo.</button>
+    <button onclick="answer(2)">C · Borrar la capa porque el mapa no coincide con la cosecha.</button>
+   </div>
+   <div class="feedback" id="feedback" aria-live="polite"></div>
+  </div>
+  <button class="cta" onclick="go(6)">Ver el futuro de la agricultura ↓</button>
+ </div>
+</section>
+<section class="scene" id="s7" style="--bg:radial-gradient(ellipse at 70% 20%,#356a50,#153b2a 48%,#07150f)">
+ <div class="art"><svg viewBox="0 0 600 430">
+  <g transform="translate(300 215)">
+   <circle r="150" fill="#d5ff64" opacity=".06"/><circle r="125" fill="none" stroke="#d5ff64" stroke-width="2" stroke-dasharray="5 9"/>
+   <path d="M-170 50Q-100 -80 0 -10T170 -55" fill="none" stroke="#7ce0b1" stroke-width="3"/>
+   <g fill="#d5ff64" stroke="#0c2a1b" stroke-width="2"><circle cx="-110" cy="0" r="14"/><circle cx="0" cy="-10" r="14"/><circle cx="110" cy="-40" r="14"/></g>
+   <g fill="#f4ffe8" font-size="14" font-weight="800"><text x="-160" y="90">DATOS</text><text x="-48" y="25">ANÁLISIS</text><text x="70" y="-65">DECISIÓN</text></g>
+   <path d="M-100 145L-60 75L-20 130L20 70L60 140L100 90" fill="none" stroke="#8fcf75" stroke-width="4"/>
+  </g>
+ </svg></div>
+ <div class="scene-inner">
+  <div class="eyebrow">Escena final · Mirar más lejos</div>
+  <h2>El futuro se cultiva con <span class="highlight">buenas preguntas.</span></h2>
+  <p>Los SIG ayudan a comparar campañas, vigilar cambios, planificar riego, priorizar recorridos y comunicar decisiones. La tecnología es poderosa cuando se combina con datos confiables y conocimiento del territorio.</p>
+  <div class="two">
+   <div class="stat"><b>🌍</b><small>Entender el espacio</small></div>
+   <div class="stat"><b>⏳</b><small>Comparar el tiempo</small></div>
+   <div class="stat"><b>🌿</b><small>Gestionar recursos</small></div>
+   <div class="stat"><b>🧭</b><small>Decidir con evidencia</small></div>
+  </div>
+  <div class="panel"><h3>Tu misión continúa</h3><p>En un proyecto real de QGIS, agrega datos con fecha, revisa su sistema de coordenadas, documenta las fuentes y compara capas equivalentes antes de sacar conclusiones.</p></div>
+  <button class="cta" onclick="go(0)">↺ Volver al inicio</button>
+  <div class="footerline"><span>GeoTiempo · SIG en la agricultura</span><span>Fin del episodio 01</span></div>
+ </div>
+</section>
+</main>
+<script>
+const story=document.getElementById('story'), scenes=[...document.querySelectorAll('.scene')], dots=document.getElementById('navdots'), progress=document.getElementById('progress');
+scenes.forEach((s,i)=>{const b=document.createElement('button');b.title='Ir a escena '+(i+1);b.setAttribute('aria-label',b.title);b.onclick=()=>go(i);dots.appendChild(b)});
+const dotButtons=[...dots.children];
+function go(i){scenes[Math.max(0,Math.min(i,scenes.length-1))].scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}
+const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){dotButtons.forEach((b,i)=>b.classList.toggle('active',scenes[i]===e.target));progress.style.width=((scenes.indexOf(e.target)+1)/scenes.length*100)+'%'}}),{root:story,threshold:.58});
+scenes.forEach(s=>observer.observe(s));
+document.getElementById('restart').onclick=()=>go(0);
+const slider=document.getElementById('yearSlider'), yearLabel=document.getElementById('yearLabel'), mapYear=document.getElementById('mapYear'), timeCopy=document.getElementById('timeCopy');
+const paths=['p1','p2','p3','p4','p5','p6'].map(id=>document.getElementById(id));
+const palettes={
+ old:['#83ad5a','#95bd61','#b4a05c','#4d8058','#7ba66a','#b67b4c'],
+ mid:['#9bcf67','#d3d86b','#df9251','#4d9b72','#75c9a0','#d7784d'],
+ now:['#a5d56a','#d4e86a','#e99d54','#4a9c76','#75c9a0','#de754d'],
+ future:['#c2df6c','#a7d68a','#c5a45d','#6cb58c','#90d2a0','#c68a54']
+};
+function updateYear(){
+ const y=+slider.value;yearLabel.textContent=y;mapYear.textContent=y;
+ let palette,copy;
+ if(y<2010){palette=palettes.old;copy=`${y} · En los primeros registros, Lina busca una línea base: ¿cómo se distribuían las zonas de vigor al inicio?`;}
+ else if(y<2020){palette=palettes.mid;copy=`${y} · Al comparar campañas aparecen diferencias. Conviene revisar lluvia, manejo y fechas de las imágenes.`;}
+ else if(y<=2026){palette=palettes.now;copy=`${y} · La parcela muestra variabilidad: Lina debe verificar humedad, compactación y nutrición.`;}
+ else {palette=palettes.future;copy=`${y} · Escenario ilustrativo, no una predicción real: Lina ensaya cómo podrían cambiar las zonas si cambian el clima y el manejo.`;}
+ paths.forEach((p,i)=>p.setAttribute('fill',palette[i]));timeCopy.textContent=copy;
+}
+slider.addEventListener('input',updateYear);updateYear();
+function answer(n){
+ const f=document.getElementById('feedback');
+ if(n===1){f.textContent='¡Correcto! Primero se verifica la evidencia, se muestrea y se contrasta el mapa con el terreno.';}
+ else if(n===0){f.textContent='No todavía: una aplicación general puede desperdiciar insumos. Investiga la causa antes de intervenir.';}
+ else{f.textContent='No la borres sin investigar: revisa fechas, resolución, escala, coordenadas y calidad de los datos.';}
+}
+let audioOn=false, audioCtx=null;
+document.getElementById('soundBtn').onclick=()=>{
+ audioOn=!audioOn;document.getElementById('soundBtn').textContent='♫ Sonido: '+(audioOn?'on':'off');
+ if(audioOn){try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type='sine';osc.frequency.value=523.25;gain.gain.value=.035;osc.connect(gain);gain.connect(audioCtx.destination);osc.start();gain.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+.22);osc.stop(audioCtx.currentTime+.23);}catch(e){}}
+};
+let touchStart=0;
+story.addEventListener('touchstart',e=>{touchStart=e.changedTouches[0].screenY},{passive:true});
+story.addEventListener('touchend',e=>{const d=touchStart-e.changedTouches[0].screenY;if(Math.abs(d)>100){const current=dotButtons.findIndex(b=>b.classList.contains('active'));if(d>0&&current<scenes.length-1)go(current+1);else if(d<0&&current>0)go(current-1)}},{passive:true});
+</script>
+</body>
+</html>
